@@ -13,6 +13,8 @@ import { Member, useMembers, useUpdateMember, useRemoveMember } from '@/hooks/us
 import { useCasais, useDeleteCasal } from '@/hooks/useCasais';
 import { MemberFormDialogSimple } from './cellleader/MemberFormDialogSimple';
 import { CasalFormDialog } from './cellleader/CasalFormDialog';
+import { useMultiplicacaoByDestino, useMultiplicacoesByOrigem } from '@/hooks/useMultiplicacoes';
+import { MultiplicacaoFormDialog } from '@/components/celulas/MultiplicacaoFormDialog';
 
 interface CelulaDetailsDialogProps {
   open: boolean;
@@ -40,9 +42,13 @@ export function CelulaDetailsDialog({ open, onOpenChange, celulaId, celulaName }
   
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
   const [casalDialogOpen, setCasalDialogOpen] = useState(false);
+  const [multiplicacaoDialogOpen, setMultiplicacaoDialogOpen] = useState(false);
   const [expandedMembers, setExpandedMembers] = useState<Set<string>>(new Set());
 
   const isLoading = membersLoading || casaisLoading;
+
+  const { data: origemDaCelula } = useMultiplicacaoByDestino(celulaId);
+  const { data: destinosGerados } = useMultiplicacoesByOrigem(celulaId);
 
   const toggleExpanded = (memberId: string) => {
     setExpandedMembers(prev => {
@@ -87,17 +93,14 @@ export function CelulaDetailsDialog({ open, onOpenChange, celulaId, celulaName }
     return count;
   };
 
-  // Get members that are already in a couple
   const membersInCouples = new Set<string>();
   casais?.forEach(casal => {
     membersInCouples.add(casal.member1_id);
     membersInCouples.add(casal.member2_id);
   });
 
-  // Filter available members for couples
   const availableMembers = members?.filter(m => !membersInCouples.has(m.id)) || [];
 
-  // Calculate statistics
   const membrosStats = {
     total: members?.length || 0,
     batismo: members?.filter(m => m.batismo).length || 0,
@@ -186,6 +189,47 @@ export function CelulaDetailsDialog({ open, onOpenChange, celulaId, celulaName }
                           </div>
                         );
                       })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex md:flex-row md:items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm">Multiplicações</CardTitle>
+                      <CardDescription>Origem e destinos desta célula</CardDescription>
+                    </div>
+                    <Button size="sm" onClick={() => setMultiplicacaoDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Registrar Multiplicação
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {origemDaCelula ? (
+                      <div className="text-sm">
+                        Esta célula surgiu de: <span className="font-medium">{origemDaCelula.origem?.name}</span> em{' '}
+                        <span className="font-mono">{origemDaCelula.data_multiplicacao}</span>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        Esta célula não possui origem registrada.
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">Células multiplicadas por esta célula</div>
+                      {destinosGerados && destinosGerados.length > 0 ? (
+                        <div className="space-y-2">
+                          {destinosGerados.map((m) => (
+                            <div key={m.id} className="flex items-center justify-between text-sm">
+                              <span>{m.destino?.name}</span>
+                              <Badge variant="outline">{m.data_multiplicacao}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Nenhuma célula multiplicada registrada.</div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -376,6 +420,11 @@ export function CelulaDetailsDialog({ open, onOpenChange, celulaId, celulaName }
         onOpenChange={setCasalDialogOpen}
         celulaId={celulaId}
         availableMembers={availableMembers}
+      />
+      <MultiplicacaoFormDialog
+        open={multiplicacaoDialogOpen}
+        onOpenChange={setMultiplicacaoDialogOpen}
+        initialOrigemId={celulaId}
       />
     </>
   );
