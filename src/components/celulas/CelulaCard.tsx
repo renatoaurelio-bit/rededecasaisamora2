@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreVertical, Pencil, Trash2, Users, MapPin, Calendar } from 'lucide-react';
+import { useMultiplicacoesByOrigem } from '@/hooks/useMultiplicacoes';
 
 interface CelulaCardProps {
   celula: Celula;
@@ -13,6 +14,7 @@ interface CelulaCardProps {
 }
 
 export function CelulaCard({ celula, onEdit, onDelete }: CelulaCardProps) {
+  const { data: destinosGerados } = useMultiplicacoesByOrigem(celula.id);
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-start justify-between pb-2">
@@ -65,6 +67,12 @@ export function CelulaCard({ celula, onEdit, onDelete }: CelulaCardProps) {
             <Users className="h-4 w-4" />
             <span>{celula._count?.members || 0} membros</span>
           </div>
+          
+          {typeof destinosGerados?.length === 'number' && (
+            <Badge variant="outline">
+              Gerou {destinosGerados.length} célula{destinosGerados.length !== 1 ? 's' : ''}
+            </Badge>
+          )}
           
           {celula.meeting_day && (
             <div className="flex items-center gap-1">
